@@ -1,10 +1,12 @@
-import type { IconifyJSON } from '@iconify/iconify'
+import type { IconifyJSON } from 'iconify-icon'
 import { notNullish } from '@antfu/utils'
-import Iconify from '@purge-icons/generated'
-import { favoritedCollections, inProgress, isFavorited, progressMessage } from '../store'
+import { addCollection } from 'iconify-icon'
+import { categorySearch, favoritedIds, inProgress, isFavorited, isRecent, progressMessage, recentIds, sortAlphabetically } from '../store'
 import { isLocalMode, staticPath } from '../env'
 import { loadCollection, saveCollection } from '../store/indexedDB'
 import infoJSON from './collections-info.json'
+
+export type PresentType = 'favorite' | 'recent' | 'normal'
 
 export interface CollectionInfo {
   id: string
@@ -27,31 +29,36 @@ export interface CollectionMeta extends CollectionInfo {
 const loadedMeta = ref<CollectionMeta[]>([])
 const installed = ref<string[]>([])
 
+const sanitize = (q: string) => q.toLowerCase().replaceAll(' ', '')
+
 export const collections = infoJSON.map(c => Object.freeze(c as any as CollectionInfo))
 export const categories = Array.from(new Set(collections.map(i => i.category).filter(notNullish)))
-export const categoryFilter = ref<string | undefined>(undefined)
 
-export const sortedCollectionsInfo = computed(() => {
-  return collections
-    .filter((c) => {
-      if (!categoryFilter.value)
-        return true
-      return c.category === categoryFilter.value
-    })
-    .sort(
-      (a, b) =>
-        favoritedCollections.value.indexOf(b.id)
-      - favoritedCollections.value.indexOf(a.id),
-    )
-})
+export const filteredCollections = computed(() =>
+  collections
+    .filter(collection => sanitize(collection.name).includes(sanitize(categorySearch.value)))
+    .sort((a, b) => {
+      if (sortAlphabetically.value)
+        return sanitize(a.name).localeCompare(sanitize(b.name))
 
-export const favoritedCollectionsIcons = computed(() => {
-  return sortedCollectionsInfo.value.filter(i => isFavorited(i.id))
-})
+      return 0
+    }),
+)
 
-export const otherCollectionsIcons = computed(() => {
-  return sortedCollectionsInfo.value.filter(i => !isFavorited(i.id))
-})
+export const sortedCollectionsInfo = computed(() =>
+  filteredCollections.value
+    .sort((a, b) => favoritedIds.value.indexOf(b.id) - favoritedIds.value.indexOf(a.id)),
+)
+
+export const favoritedCollections = computed(() =>
+  filteredCollections.value.filter(i => isFavorited(i.id))
+    .sort((a, b) => favoritedIds.value.indexOf(b.id) - favoritedIds.value.indexOf(a.id)),
+)
+
+export const recentCollections = computed(() =>
+  filteredCollections.value.filter(i => isRecent(i.id))
+    .sort((a, b) => recentIds.value.indexOf(b.id) - recentIds.value.indexOf(a.id)),
+)
 
 export const isInstalled = (id: string) => installed.value.includes(id)
 export const isMetaLoaded = (id: string) => !!loadedMeta.value.find(i => i.id === id)
@@ -60,7 +67,7 @@ export const isMetaLoaded = (id: string) => !!loadedMeta.value.find(i => i.id ==
 export function preInstall() {
   for (const collection of collections) {
     if (collection.prepacked)
-      Iconify.addCollection(collection.prepacked as any)
+      addCollection(collection.prepacked as any)
   }
 }
 
@@ -79,7 +86,7 @@ export async function tryInstallFromLocal(id: string) {
     return false
 
   const data = result.data
-  Iconify.addCollection(data)
+  addCollection(data)
   installed.value.push(id)
 
   return true
@@ -95,7 +102,7 @@ export async function downloadAndInstall(id: string) {
 
   const data = Object.freeze(await fetch(`${staticPath}/collections/${id}-raw.json`).then(r => r.json()))
 
-  Iconify.addCollection(data)
+  addCollection(data)
   installed.value.push(id)
 
   if (!isLocalMode)

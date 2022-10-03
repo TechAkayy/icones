@@ -1,18 +1,27 @@
-import Iconify from '@purge-icons/generated'
+import { buildIcon, loadIcon } from 'iconify-icon'
 import { getTransformedId } from '../store'
 import Base64 from './base64'
 import { HtmlToJSX } from './htmlToJsx'
 
 const API_ENTRY = 'https://api.iconify.design'
 
+export async function getSvgLocal(icon: string, size = '1em', color = 'currentColor') {
+  const data = await loadIcon(icon)
+  if (!data)
+    return
+  const built = buildIcon(data, { height: size })
+  if (!built)
+    return
+  return `<svg ${Object.entries(built.attributes).map(([k, v]) => `${k}="${v}"`).join(' ')}>${built.body}</svg>`.replace('currentColor', color)
+}
+
 export async function getSvg(icon: string, size = '1em', color = 'currentColor') {
-  return Iconify.renderSVG(icon, { height: size })?.outerHTML?.replace('currentColor', color)
+  return await getSvgLocal(icon, size, color)
    || await fetch(`${API_ENTRY}/${icon}.svg?inline=false&height=${size}&color=${encodeURIComponent(color)}`).then(r => r.text()) || ''
 }
 
 export async function getSvgSymbol(icon: string, size = '1em', color = 'currentColor') {
-  const svgMarkup = Iconify.renderSVG(icon, { height: size })?.outerHTML?.replace('currentColor', color)
-  || await fetch(`${API_ENTRY}/${icon}.svg?inline=false&height=${size}&color=${encodeURIComponent(color)}`).then(r => r.text()) || ''
+  const svgMarkup = await getSvg(icon, size, color)
 
   const symbolElem = document.createElementNS('http://www.w3.org/2000/svg', 'symbol')
   const node = document.createElement('div') // Create any old element
@@ -30,24 +39,24 @@ export function toComponentName(icon: string) {
   return icon.split(/:|-|_/).filter(Boolean).map(s => s[0].toUpperCase() + s.slice(1).toLowerCase()).join('')
 }
 
-export function ClearSvg(svgCode: string) {
+export function ClearSvg(svgCode: string, reactJSX?: boolean) {
   const el = document.createElement('div')
   el.innerHTML = svgCode
   const svg = el.getElementsByTagName('svg')[0]
-  const keep = ['viewBox', 'width', 'height', 'focusable']
+  const keep = ['viewBox', 'width', 'height', 'focusable', 'xmlns', 'xlink']
   for (const key of Object.values(svg.attributes)) {
     if (keep.includes(key.localName))
       continue
     svg.removeAttributeNode(key)
   }
-  return HtmlToJSX(el.innerHTML)
+  return HtmlToJSX(el.innerHTML, reactJSX)
 }
 
 export function SvgToJSX(svg: string, name: string, snippet: boolean) {
   const code = `
 export function ${name}(props) {
   return (
-    ${ClearSvg(svg).replace(/<svg (.*?)>/, '<svg $1 {...props}>')}
+    ${ClearSvg(svg, true).replace(/<svg (.*?)>/, '<svg $1 {...props}>')}
   )
 }`
   if (snippet)
@@ -60,7 +69,7 @@ export function SvgToTSX(svg: string, name: string, snippet: boolean) {
   const code = `
 export function ${name}(props: SVGProps<SVGSVGElement>) {
   return (
-    ${ClearSvg(svg).replace(/<svg (.*?)>/, '<svg $1 {...props}>')}
+    ${ClearSvg(svg, true).replace(/<svg (.*?)>/, '<svg $1 {...props}>')}
   )
 }`
   if (snippet)

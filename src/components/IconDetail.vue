@@ -17,7 +17,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['close', 'copy'])
+const emit = defineEmits(['close', 'copy', 'next', 'prev'])
 
 const caseSelector = ref<HTMLDivElement>()
 const transformedId = computed(() => getTransformedId(props.icon))
@@ -25,6 +25,20 @@ const color = computed(() => copyPreviewColor.value ? previewColor.value : 'curr
 
 onClickOutside(caseSelector, () => {
   showCaseSelect.value = false
+})
+
+onKeyStroke('ArrowLeft', (e) => {
+  if (!props.icon)
+    return
+  emit('prev')
+  e.preventDefault()
+})
+
+onKeyStroke('ArrowRight', (e) => {
+  if (!props.icon)
+    return
+  emit('next')
+  e.preventDefault()
 })
 
 const copy = async (type: string) => {
@@ -65,7 +79,7 @@ const collection = computed(() => {
 </script>
 
 <template>
-  <div class="p-2 flex flex-col md:flex-row md:text-left relative">
+  <div class="p-2 flex flex-col flex-wrap md:flex-row md:text-left relative">
     <IconButton class="absolute top-0 right-0 p-3 text-2xl flex-none leading-none" icon="carbon:close" @click="$emit('close')" />
     <div :style="{ color: previewColor }">
       <ColorPicker v-model:value="previewColor" class="inline-block">
@@ -108,13 +122,13 @@ const collection = computed(() => {
 
       <p v-if="showCollection && collection" class="flex mb-1 text-gray-500 text-sm">
         Collection:
-        <router-link
+        <RouterLink
           class="ml-1 text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
           :to="`/collection/${collection.id}`"
           @click="$emit('close')"
         >
           {{ collection.name }}
-        </router-link>
+        </RouterLink>
       </p>
 
       <div>
@@ -231,6 +245,27 @@ const collection = computed(() => {
           <button class="btn small mr-1 mb-1 opacity-75" @click="download('svelte')">
             Svelte
           </button>
+        </div>
+        <div class="mr-4">
+          <div class="my-1 text-gray-500 text-sm">
+            View on
+          </div>
+          <a
+            v-if="collection"
+            class="btn small mr-1 mb-1 opacity-75"
+            :href="`https://icon-sets.iconify.design/${collection.id}/?query=${icon.split(':')[1]}`"
+            target="_blank"
+          >
+            Iconify
+          </a>
+          <a
+            v-if="collection"
+            class="btn small mr-1 mb-1 opacity-75"
+            :href="`https://uno.antfu.me/?s=i-${icon.replace(':', '-')}`"
+            target="_blank"
+          >
+            UnoCSS
+          </a>
         </div>
       </div>
     </div>
