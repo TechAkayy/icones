@@ -2,6 +2,7 @@ import { buildIcon, loadIcon } from 'iconify-icon'
 import { getTransformedId } from '../store'
 import Base64 from './base64'
 import { HtmlToJSX } from './htmlToJsx'
+import { prettierCode } from './prettier'
 
 const API_ENTRY = 'https://api.iconify.design'
 
@@ -12,7 +13,8 @@ export async function getSvgLocal(icon: string, size = '1em', color = 'currentCo
   const built = buildIcon(data, { height: size })
   if (!built)
     return
-  return `<svg ${Object.entries(built.attributes).map(([k, v]) => `${k}="${v}"`).join(' ')}>${built.body}</svg>`.replace('currentColor', color)
+  const xlink = built.body.includes('xlink:') ? ' xmlns:xlink="http://www.w3.org/1999/xlink"' : ''
+  return `<svg xmlns="http://www.w3.org/2000/svg"${xlink} ${Object.entries(built.attributes).map(([k, v]) => `${k}="${v}"`).join(' ')}>${built.body}</svg>`.replace('currentColor', color)
 }
 
 export async function getSvg(icon: string, size = '1em', color = 'currentColor') {
@@ -60,26 +62,25 @@ export function ${name}(props) {
   )
 }`
   if (snippet)
-    return code
+    return prettierCode(code, 'babel-ts')
   else
-    return `import React from 'react'\n${code}\nexport default ${name}`
+    return prettierCode(`import React from 'react'\n${code}\nexport default ${name}`, 'babel-ts')
 }
 
 export function SvgToTSX(svg: string, name: string, snippet: boolean) {
-  const code = `
+  let code = `
 export function ${name}(props: SVGProps<SVGSVGElement>) {
   return (
     ${ClearSvg(svg, true).replace(/<svg (.*?)>/, '<svg $1 {...props}>')}
   )
 }`
-  if (snippet)
-    return code
-  else
-    return `import React, { SVGProps } from 'react'\n${code}\nexport default ${name}`
+
+  code = snippet ? code : `import React, { SVGProps } from 'react'\n${code}\nexport default ${name}`
+  return prettierCode(code, 'babel-ts')
 }
 
-export function SvgToVue(svg: string, name: string) {
-  return `
+export function SvgToVue(svg: string, name: string, isTs?: boolean) {
+  const contet = `
 <template>
   ${ClearSvg(svg)}
 </template>
@@ -89,6 +90,8 @@ export default {
   name: '${name}'
 }
 </script>`
+  const code = isTs ? contet.replace('<script>', '<script lang="ts">') : contet
+  return prettierCode(code, 'vue')
 }
 
 export function SvgToSvelte(svg: string) {
@@ -126,6 +129,8 @@ export async function getIconSnippet(icon: string, type: string, snippet = true,
       return SvgToTSX(await getSvg(icon, undefined, color), toComponentName(icon), snippet)
     case 'vue':
       return SvgToVue(await getSvg(icon, undefined, color), toComponentName(icon))
+    case 'vue-ts':
+      return SvgToVue(await getSvg(icon, undefined, color), toComponentName(icon), true)
     case 'svelte':
       return SvgToSvelte(await getSvg(icon, undefined, color))
     case 'unplugin':

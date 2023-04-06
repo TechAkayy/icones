@@ -1,9 +1,8 @@
 <script setup lang='ts'>
-import copyText from 'copy-text-to-clipboard'
 import { useRoute, useRouter } from 'vue-router'
 import { activeMode, bags, getSearchResults, iconSize, isCurrentCollectionLoading, listType, showHelp, toggleBag } from '../store'
 import { isLocalMode } from '../env'
-import { cacheCollection } from '../data'
+import { cacheCollection, specialTabs } from '../data'
 import { getIconSnippet } from '../utils/icons'
 
 const showBag = $ref(false)
@@ -15,15 +14,14 @@ const input = $ref<HTMLInputElement>()
 const route = useRoute()
 const router = useRouter()
 
-const { search, icons, category, collection } = getSearchResults()
+const { search, icons, category, collection, variant } = getSearchResults()
 const loading = isCurrentCollectionLoading()
 
 const maxMap = new Map<string, number>()
+const id = $computed(() => collection.value?.id)
 const url = $computed(() => collection.value?.url || collection.value?.author?.url)
-const namespace = $computed(() => !collection.value || collection.value.id === 'all'
-  ? ''
-  : `${collection.value.id}:`,
-)
+const npm = $computed(() => (id != null && !specialTabs.includes(id)) ? `https://www.npmjs.com/package/@iconify-json/${id}` : '')
+const namespace = $computed(() => (id != null && !specialTabs.includes(id)) ? `${id}:` : '')
 
 function onCopy(status: boolean) {
   copied = status
@@ -39,13 +37,32 @@ function toggleCategory(cat: string) {
     category.value = cat
 }
 
+function toggleVariant(v: string) {
+  if (variant.value === v)
+    variant.value = ''
+  else
+    variant.value = v
+}
+
+async function copyText(text?: string) {
+  if (text) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+    catch (err) {
+    }
+  }
+  return false
+}
+
 async function onSelect(icon: string) {
   switch (activeMode.value) {
     case 'select':
       toggleBag(icon)
       break
     case 'copy':
-      onCopy(copyText(await getIconSnippet(icon, 'id', true) || icon))
+      onCopy(await copyText(await getIconSnippet(icon, 'id', true) || icon))
       break
     default:
       current = icon
@@ -114,6 +131,18 @@ onKeyStroke('Escape', () => {
     input?.focus()
   }
 })
+
+const categoriesContainer = ref<HTMLElement | null>(null)
+const { x } = useScroll(categoriesContainer)
+useEventListener(categoriesContainer, 'wheel', (e: WheelEvent) => {
+  e.preventDefault()
+  if (e.deltaX)
+    x.value += e.deltaX
+  else
+    x.value += e.deltaY
+}, {
+  passive: false,
+})
 </script>
 
 <template>
@@ -148,6 +177,14 @@ onKeyStroke('Escape', () => {
               >
                 <Icon icon="la:external-link-square-alt-solid" />
               </a>
+              <a
+                v-if="npm"
+                class="ml-1 mt-1 text-base opacity-25 hover:opacity-100"
+                :href="npm"
+                target="_blank"
+              >
+                <Icon icon="la:npm" />
+              </a>
               <div class="flex-auto" />
             </div>
             <div class="text-xs block opacity-50">
@@ -170,28 +207,26 @@ onKeyStroke('Escape', () => {
         </div>
 
         <!-- Categories -->
-        <div class="py-2 px-7 overflow-x-overlay flex flex-no-wrap select-none">
-          <template v-if="collection.categories">
-            <div
-              v-for="c of Object.keys(collection.categories)"
-              :key="c"
-              class="
-                whitespace-nowrap text-sm inline-block px-2 border border-gray-200 rounded-full m-1 hover:bg-gray-50 cursor-pointer
+        <div v-if="collection.categories" ref="categoriesContainer" class="py-1 mt2 mx-8 overflow-x-overlay flex flex-nowrap gap-2 select-none">
+          <div
+            v-for="c of Object.keys(collection.categories).sort()"
+            :key="c"
+            class="
+                whitespace-nowrap text-sm inline-block px-2 border border-base rounded-full hover:bg-gray-50 cursor-pointer
                 dark:border-dark-200 dark:hover:bg-dark-200
               "
-              :class="c === category ? 'text-primary border-primary dark:border-primary' : 'opacity-75'"
-              @click="toggleCategory(c)"
-            >
-              {{ c }}
-            </div>
-          </template>
+            :class="c === category ? 'text-primary border-primary dark:border-primary' : 'opacity-75'"
+            @click="toggleCategory(c)"
+          >
+            {{ c }}
+          </div>
         </div>
 
         <!-- Searching -->
         <div
           class="
             mx-8 my-2 hidden md:flex shadow rounded outline-none py-1 px-4
-            border border-transparent dark:border-dark-200
+            border border-base
           "
         >
           <Icon icon="carbon:search" class="m-auto flex-none opacity-60" />
@@ -209,6 +244,25 @@ onKeyStroke('Escape', () => {
           </form>
 
           <Icon v-if="search" icon="carbon:close" class="m-auto text-lg -mr-1 opacity-60" @click="search = ''" />
+        </div>
+
+        <!-- Variants --->
+        <div v-if="collection.variants" class="py1 mx-8 overflow-x-overlay flex flex-nowrap gap-2 select-none items-center">
+          <div text-sm op50>
+            Variants
+          </div>
+          <div
+            v-for="c of Object.keys(collection.variants).sort()"
+            :key="c"
+            class="
+                whitespace-nowrap text-sm inline-block px-2 border border-base rounded-full hover:bg-gray-50 cursor-pointer
+                dark:border-dark-200 dark:hover:bg-dark-200
+              "
+            :class="c === variant ? 'text-primary border-primary dark:border-primary' : 'opacity-75'"
+            @click="toggleVariant(c)"
+          >
+            {{ c }}
+          </div>
         </div>
 
         <!-- Icons -->
@@ -254,7 +308,7 @@ onKeyStroke('Escape', () => {
         <!-- Details -->
         <Modal :value="!!current" @close="current = ''">
           <IconDetail
-            :icon="current" :show-collection="collection.id === 'all'"
+            :icon="current" :show-collection="specialTabs.includes(collection.id)"
             @close="current = ''"
             @copy="onCopy"
             @next="next(1)"

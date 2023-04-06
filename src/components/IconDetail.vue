@@ -1,8 +1,7 @@
 <script setup lang='ts'>
-import copyText from 'copy-text-to-clipboard'
 import { getIconSnippet, toComponentName } from '../utils/icons'
 import { collections } from '../data'
-import { activeMode, copyPreviewColor, getTransformedId, inBag, preferredCase, previewColor, showCaseSelect, showHelp, toggleBag } from '../store'
+import { activeMode, copyPreviewColor, getTransformedId, inBag, preferredCase, previewColor, pushRecentIcon, showCaseSelect, showHelp, toggleBag } from '../store'
 import { Download } from '../utils/pack'
 import { idCases } from '../utils/case'
 
@@ -41,15 +40,29 @@ onKeyStroke('ArrowRight', (e) => {
   e.preventDefault()
 })
 
-const copy = async (type: string) => {
+async function copyText(text?: string) {
+  if (text) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+    catch (err) {
+    }
+  }
+  return false
+}
+
+async function copy(type: string) {
+  pushRecentIcon(props.icon)
   const text = await getIconSnippet(props.icon, type, true, color.value)
   if (!text)
     return
 
-  emit('copy', copyText(text))
+  emit('copy', await copyText(text))
 }
 
-const download = async (type: string) => {
+async function download(type: string) {
+  pushRecentIcon(props.icon)
   const text = await getIconSnippet(props.icon, type, false, color.value)
   if (!text)
     return
@@ -60,7 +73,7 @@ const download = async (type: string) => {
   Download(blob, name)
 }
 
-const toggleSelectingMode = () => {
+function toggleSelectingMode() {
   switch (activeMode.value) {
     case 'select':
       activeMode.value = 'normal'
@@ -83,7 +96,7 @@ const collection = computed(() => {
     <IconButton class="absolute top-0 right-0 p-3 text-2xl flex-none leading-none" icon="carbon:close" @click="$emit('close')" />
     <div :style="{ color: previewColor }">
       <ColorPicker v-model:value="previewColor" class="inline-block">
-        <Icon class="p-4 text-8xl" :icon="icon" />
+        <Icon :key="icon" outer-class="p-4 text-8xl" :icon="icon" />
       </ColorPicker>
     </div>
     <div class="px-6 py-2 mb-2 md:px-2 md:py-4">
@@ -112,7 +125,8 @@ const collection = computed(() => {
           >
             <Icon
               icon="carbon:checkmark"
-              class="text-primary mr-1 text-lg"
+              class="text-primary text-lg"
+              outer-class="mr-1"
               :class="k === preferredCase ? '' : 'opacity-0'"
             />
             <span class="flex-auto mr-2">{{ v(icon) }}</span>
@@ -134,8 +148,8 @@ const collection = computed(() => {
       <div>
         <button
           class="
-            inline-block leading-1em border border-gray-200 my-2 mr-2 font-sans pl-2 pr-3 py-1 rounded-full text-sm cursor-pointer hover:bg-gray-50
-            dark:border-dark-200 dark:hover:bg-dark-200
+            inline-block leading-1em border border-base my-2 mr-2 font-sans pl-2 pr-3 py-1 rounded-full text-sm cursor-pointer
+            hover:bg-gray-50 dark:hover:bg-dark-200
           "
           :class="inBag(icon) ? 'text-primary' : 'text-gray-500'"
           @click="toggleBag(icon)"
@@ -153,8 +167,8 @@ const collection = computed(() => {
         <button
           v-if="inBag(icon)"
           class="
-            inline-block leading-1em border border-gray-200 my-2 mr-2 font-sans pl-2 pr-3 py-1 rounded-full text-sm cursor-pointer hover:bg-gray-50
-            dark:border-dark-200 dark:hover:bg-dark-200
+            inline-block leading-1em border border-base my-2 mr-2 font-sans pl-2 pr-3 py-1 rounded-full text-sm cursor-pointer
+            hover:bg-gray-50 dark:hover:bg-dark-200
           "
           :class="activeMode === 'select' ? 'text-primary' : 'text-gray-500'"
           @click="toggleSelectingMode"
@@ -165,8 +179,8 @@ const collection = computed(() => {
 
         <button
           class="
-            inline-block leading-1em border border-gray-200 my-2 mr-2 font-sans pl-2 pr-3 py-1 rounded-full text-sm cursor-pointer hover:bg-gray-50
-            dark:border-dark-200 dark:hover:bg-dark-200
+            inline-block leading-1em border border-base my-2 mr-2 font-sans pl-2 pr-3 py-1 rounded-full text-sm cursor-pointer
+            hover:bg-gray-50 dark:hover:bg-dark-200
           "
           :class="copyPreviewColor ? 'text-primary' : 'text-gray-500'"
           @click="copyPreviewColor = !copyPreviewColor"
@@ -201,6 +215,9 @@ const collection = computed(() => {
           </div>
           <button class="btn small mr-1 mb-1 opacity-75" @click="copy('vue')">
             Vue
+          </button>
+          <button class="btn small mr-1 mb-1 opacity-75" @click="copy('vue-ts')">
+            Vue<sup class="opacity-50 -mr-1">TS</sup>
           </button>
           <button class="btn small mr-1 mb-1 opacity-75" @click="copy('jsx')">
             React

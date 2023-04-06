@@ -2,20 +2,52 @@ import { AsyncFzf, asyncExtendedMatch } from 'fzf'
 import type { Ref } from 'vue'
 import { computed, markRaw, ref, watch } from 'vue'
 import type { CollectionMeta } from '../data'
+import { specialTabs } from '../data'
+import { searchAlias } from '../data/search-alias'
 
-export function useSearch(collection: Ref<CollectionMeta | null>, defaultCategory = '', defaultSearch = '') {
-  const category = ref(defaultCategory)
-  const search = ref(defaultSearch)
-  const isAll = computed(() => collection.value && collection.value.id === 'all')
+export function useSearch(collection: Ref<CollectionMeta | null>) {
+  const category = ref('')
+  const variant = ref('')
+  const search = ref('')
+
+  const isAll = computed(() => collection.value && specialTabs.includes(collection.value.id))
+  const searchParts = computed(() => search.value.trim().toLowerCase().split(' ').filter(Boolean))
+
+  const aliasedSearchCandidates = computed(() => {
+    const options = new Set([
+      searchParts.value.join(' '),
+    ])
+
+    searchParts.value.forEach((i, idx, arr) => {
+      const alias = searchAlias.find(a => a.includes(i))
+      if (alias?.length) {
+        alias.forEach((a) => {
+          options.add([...arr.slice(0, idx), a, arr.slice(idx + 1)].filter(Boolean).join(' ').trim())
+        })
+      }
+    })
+
+    return [...options]
+  })
+
+  // Matching any character used in extended match
+  // https://github.com/junegunn/fzf#search-syntax
+  const useExtendedMatch = computed(() => /[ '^$!]/.test(search.value))
 
   const iconSource = computed(() => {
     if (!collection.value)
       return []
 
-    if (category.value)
-      return (collection.value.categories && collection.value.categories[category.value]) || []
-    else
-      return collection.value.icons
+    return (category.value && variant.value)
+      ? arrayIntersection(
+        collection.value.categories?.[category.value] || [],
+        collection.value.variants?.[variant.value] || [],
+      )
+      : category.value
+        ? (collection.value.categories?.[category.value] || [])
+        : variant.value
+          ? (collection.value.variants?.[variant.value] || [])
+          : collection.value.icons
   })
 
   const fzf = computed(() => {
@@ -36,35 +68,55 @@ export function useSearch(collection: Ref<CollectionMeta | null>, defaultCategor
 
   const icons = ref<string[]>([])
 
+  function runSearch() {
+    const finder = (useExtendedMatch.value || aliasedSearchCandidates.value.length > 1)
+      ? fzf
+      : fzfFast
+
+    const searchString = aliasedSearchCandidates.value.join(' | ')
+
+    finder.value.find(searchString)
+      .then((result) => {
+        icons.value = result.map(i => i.item)
+      }).catch(() => {
+        // The search is canceled
+      })
+  }
+
+  const debouncedSearch = useDebounceFn(runSearch, 200)
+
+  watch([category, variant], () => {
+    runSearch()
+  })
+
   watchEffect(() => {
     if (!search.value) {
       icons.value = iconSource.value
       return
     }
 
-    // Matching any character used in extended match
-    // https://github.com/junegunn/fzf#search-syntax
-    const useExtendedMatch = /[ '^$!]/.test(search.value)
-
-    if (isAll.value && !useExtendedMatch) {
-      icons.value = iconSource.value.filter(i => i.includes(search.value))
+    if (isAll.value && !useExtendedMatch.value) {
+      icons.value = iconSource.value
+        .filter(i => aliasedSearchCandidates.value.some(s => i.includes(s)))
       return
     }
 
-    const finder = useExtendedMatch ? fzf : fzfFast
-    finder.value.find(search.value).then((result) => {
-      icons.value = result.map(i => i.item)
-    }).catch(() => {
-      // The search is canceled
-    })
+    debouncedSearch()
   })
 
-  watch(collection, () => { category.value = defaultCategory })
+  watch(
+    collection,
+    () => {
+      category.value = ''
+      variant.value = ''
+    },
+  )
 
   return {
     collection,
     search,
     category,
+    variant,
     icons,
   }
 }
@@ -77,4 +129,8 @@ export function getSearchHighlightHTML(text: string, search: string, baseClass =
 
   const end = start + search.length
   return `<span class="${baseClass}">${text.slice(0, start)}<b class="${activeClass}">${text.slice(start, end)}</b>${text.slice(end)}</span>`
+}
+
+export function arrayIntersection<T>(a: T[], b: T[]) {
+  return a.filter(i => b.includes(i))
 }

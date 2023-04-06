@@ -1,10 +1,14 @@
 import type { IconifyJSON } from 'iconify-icon'
 import { notNullish } from '@antfu/utils'
 import { addCollection } from 'iconify-icon'
-import { categorySearch, favoritedIds, inProgress, isFavorited, isRecent, progressMessage, recentIds, sortAlphabetically } from '../store'
+import { AsyncFzf } from 'fzf'
+import { favoritedCollectionIds, inProgress, isExcludedCollection, isFavoritedCollection, isRecentCollection, progressMessage, recentCollectionIds, sortAlphabetically } from '../store'
 import { isLocalMode, staticPath } from '../env'
 import { loadCollection, saveCollection } from '../store/indexedDB'
 import infoJSON from './collections-info.json'
+import { variantCategories } from './variant-category'
+
+export const specialTabs = ['all', 'recent']
 
 export type PresentType = 'favorite' | 'recent' | 'normal'
 
@@ -24,44 +28,67 @@ export interface CollectionInfo {
 export interface CollectionMeta extends CollectionInfo {
   icons: string[]
   categories?: Record<string, string[]>
+  variants?: Record<string, string[]>
 }
 
 const loadedMeta = ref<CollectionMeta[]>([])
 const installed = ref<string[]>([])
 
-const sanitize = (q: string) => q.toLowerCase().replaceAll(' ', '')
-
 export const collections = infoJSON.map(c => Object.freeze(c as any as CollectionInfo))
+export const enabledCollections = computed(() => collections.filter(c => !isExcludedCollection(c)))
 export const categories = Array.from(new Set(collections.map(i => i.category).filter(notNullish)))
 
-export const filteredCollections = computed(() =>
-  collections
-    .filter(collection => sanitize(collection.name).includes(sanitize(categorySearch.value)))
-    .sort((a, b) => {
-      if (sortAlphabetically.value)
-        return sanitize(a.name).localeCompare(sanitize(b.name))
+export const isSearchOpen = ref(false)
+export const categorySearch = ref('')
 
-      return 0
-    }),
-)
+const fzf = new AsyncFzf(collections, {
+  casing: 'case-insensitive',
+  fuzzy: 'v1',
+  selector: v => `${v.name} ${v.id} ${v.category} ${v.author}`,
+})
+
+export const filteredCollections = ref<CollectionInfo[]>(enabledCollections.value)
+
+watch([categorySearch, enabledCollections], ([q]) => {
+  if (!q) {
+    filteredCollections.value = enabledCollections.value
+  }
+  else {
+    fzf.find(q).then((result) => {
+      filteredCollections.value = result
+        .map(i => i.item)
+        .sort((a, b) => {
+          if (sortAlphabetically.value)
+            return a.name.localeCompare(b.name)
+          return 0
+        })
+    }).catch(() => {
+      // The search is canceled
+    })
+  }
+})
 
 export const sortedCollectionsInfo = computed(() =>
   filteredCollections.value
-    .sort((a, b) => favoritedIds.value.indexOf(b.id) - favoritedIds.value.indexOf(a.id)),
+    .sort((a, b) => favoritedCollectionIds.value.indexOf(b.id) - favoritedCollectionIds.value.indexOf(a.id)),
 )
 
 export const favoritedCollections = computed(() =>
-  filteredCollections.value.filter(i => isFavorited(i.id))
-    .sort((a, b) => favoritedIds.value.indexOf(b.id) - favoritedIds.value.indexOf(a.id)),
+  filteredCollections.value.filter(i => isFavoritedCollection(i.id))
+    .sort((a, b) => favoritedCollectionIds.value.indexOf(b.id) - favoritedCollectionIds.value.indexOf(a.id)),
 )
 
 export const recentCollections = computed(() =>
-  filteredCollections.value.filter(i => isRecent(i.id))
-    .sort((a, b) => recentIds.value.indexOf(b.id) - recentIds.value.indexOf(a.id)),
+  filteredCollections.value.filter(i => isRecentCollection(i.id))
+    .sort((a, b) => recentCollectionIds.value.indexOf(b.id) - recentCollectionIds.value.indexOf(a.id)),
 )
 
-export const isInstalled = (id: string) => installed.value.includes(id)
-export const isMetaLoaded = (id: string) => !!loadedMeta.value.find(i => i.id === id)
+export function isInstalled(id: string) {
+  return installed.value.includes(id)
+}
+export function isMetaLoaded(id: string) {
+  return !!loadedMeta.value.find(i => i.id === id)
+}
 
 // install the preview icons on the homepage
 export function preInstall() {
@@ -72,7 +99,7 @@ export function preInstall() {
 }
 
 export async function tryInstallFromLocal(id: string) {
-  if (id === 'all')
+  if (specialTabs.includes(id))
     return false
 
   if (isLocalMode)
@@ -94,7 +121,7 @@ export async function tryInstallFromLocal(id: string) {
 
 // load full iconset
 export async function downloadAndInstall(id: string) {
-  if (id === 'all')
+  if (specialTabs.includes(id))
     return false
 
   if (installed.value.includes(id))
@@ -119,21 +146,40 @@ export async function cacheCollection(id: string) {
   inProgress.value = false
 }
 
-export async function getMeta(id: string): Promise<CollectionMeta | null> {
+export async function getCollectionMeta(id: string): Promise<CollectionMeta | null> {
   let meta = loadedMeta.value.find(i => i.id === id)
   if (meta)
     return meta
 
-  meta = Object.freeze(
-    await fetch(`${staticPath}/collections/${id}-meta.json`).then(r => r.json()),
-  )
+  meta = await fetch(`${staticPath}/collections/${id}-meta.json`).then(r => r.json())
 
   if (!meta)
     return null
 
+  meta.variants ||= getVariantCategories(meta)
+
+  meta = Object.freeze(meta)
+
   loadedMeta.value.push(meta)
 
   return meta
+}
+
+function getVariantCategories(collection: CollectionMeta) {
+  const variantsRule = variantCategories[collection.id]
+  if (!variantsRule)
+    return
+
+  const variants: Record<string, string[]> = {}
+
+  for (const icon of collection.icons) {
+    const name = variantsRule.find(i => typeof i[1] === 'string' ? icon.endsWith(i[1]) : i[1].test(icon))?.[0] || 'Regular'
+    if (!variants[name])
+      variants[name] = []
+    variants[name].push(icon)
+  }
+
+  return variants
 }
 
 export async function getFullMeta() {

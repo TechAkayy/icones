@@ -1,4 +1,4 @@
-import path from 'path'
+import path from 'node:path'
 import fs from 'fs-extra'
 
 const out = path.resolve(__dirname, '../public')
@@ -43,8 +43,13 @@ async function prepareJSON() {
     collectionsMeta.push(meta)
 
     info.sampleIcons = icons.slice(0, 9)
-    if (info.id === 'logos')
-      info.sampleIcons = ['vue', 'vitejs', 'vitest', 'rollupjs', 'github-icon', 'eslint', 'esbuild', 'typescript-icon', 'netlify']
+    if (info.id === 'logos') {
+      info.sampleIcons = [
+        'vue', 'vitejs', 'vitest', 'rollupjs',
+        'github-icon', 'eslint', 'esbuild',
+        'typescript-icon', 'netlify-icon',
+      ]
+    }
     // non-square icons
     if (['flag', 'flagpack', 'cif', 'fa', 'fontisto', 'et', 'ps'].includes(info.id))
       info.sampleIcons = info.sampleIcons.slice(0, 6)
