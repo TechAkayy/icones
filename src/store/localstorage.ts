@@ -16,7 +16,7 @@ export const favoritedCollectionIds = useStorage<string[]>('icones-fav-collectio
 export const recentCollectionIds = useStorage<string[]>('icones-recent-collections', [])
 export const recentIconIds = useStorage<string[]>('icones-recent-icons', [])
 export const bags = useStorage<string[]>('icones-bags', [])
-export const activeMode = useStorage<ActiveMode>('active-mode', 'normal')
+export const activeMode = useStorage<ActiveMode>('active-mode', 'copy')
 export const preferredCase = useStorage<IdCase>('icones-preferfed-case', 'iconify')
 export const sortAlphabetically = useStorage('icones-alpha-sort-collections', false)
 

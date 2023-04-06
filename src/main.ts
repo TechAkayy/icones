@@ -8,6 +8,7 @@ import 'uno.css'
 import 'iconify-icon'
 
 import { basePath, isElectron } from './env'
+import { iconPickerRef } from './store/pinegrow'
 import routes from '~pages'
 
 const app = createApp(App)
@@ -19,3 +20,6 @@ const router = createRouter({
 
 app.use(router)
 app.mount('#app')
+router.push('/collection/all')
+
+export { iconPickerRef }

@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { useRoute, useRouter } from 'vue-router'
-import { activeMode, bags, getSearchResults, iconSize, isCurrentCollectionLoading, listType, showHelp, toggleBag } from '../store'
+import { activeMode, bags, getSearchResults, iconPickerRef, iconSize, isCurrentCollectionLoading, listType, toggleBag } from '../store'
 import { isLocalMode } from '../env'
 import { cacheCollection, specialTabs } from '../data'
 import { getIconSnippet } from '../utils/icons'
@@ -62,6 +62,7 @@ async function onSelect(icon: string) {
       toggleBag(icon)
       break
     case 'copy':
+      iconPickerRef.iconName = icon
       onCopy(await copyText(await getIconSnippet(icon, 'id', true) || icon))
       break
     default:
@@ -290,23 +291,26 @@ useEventListener(categoriesContainer, 'wheel', (e: WheelEvent) => {
         <Footer />
 
         <!-- Bag Fab -->
-        <FAB
+        <!-- @techakayy -->
+        <!-- <FAB
           v-if="bags.length"
           icon="carbon:shopping-bag"
           :number="bags.length"
           @click="showBag = true"
-        />
+        /> -->
 
         <!-- Bag -->
-        <Modal :value="showBag" direction="right" @close="showBag = false">
+        <!-- @techakayy -->
+        <!-- <Modal :value="showBag" direction="right" @close="showBag = false">
           <Bag
             @close="showBag = false"
             @select="onSelect"
           />
-        </Modal>
+        </Modal> -->
 
         <!-- Details -->
-        <Modal :value="!!current" @close="current = ''">
+        <!-- @techakayy -->
+        <!-- <Modal :value="!!current" @close="current = ''">
           <IconDetail
             :icon="current" :show-collection="specialTabs.includes(collection.id)"
             @close="current = ''"
@@ -314,22 +318,24 @@ useEventListener(categoriesContainer, 'wheel', (e: WheelEvent) => {
             @next="next(1)"
             @prev="next(-1)"
           />
-        </Modal>
+        </Modal> -->
 
         <!-- Help -->
-        <ModalDialog :value="showHelp" @close="showHelp = false">
+        <!-- @techakayy -->
+        <!-- <ModalDialog :value="showHelp" @close="showHelp = false">
           <HelpPage />
-        </ModalDialog>
+        </ModalDialog> -->
 
         <!-- Mode -->
-        <div
+        <!-- @techakayy -->
+        <!-- <div
           class="fixed top-0 right-0 pl-4 pr-2 py-1 rounded-l-full bg-primary text-white shadow mt-16 cursor-pointer transition-transform duration-300 ease-in-out"
           :style="activeMode !== 'normal' ? {} : { transform: 'translateX(120%)' }"
           @click="activeMode = 'normal'"
         >
           {{ activeMode === 'select' ? 'Multiple select' : 'Name copying mode' }}
           <Icon icon="carbon:close" class="inline-block text-xl align-text-bottom" />
-        </div>
+        </div> -->
 
         <SearchElectron />
 

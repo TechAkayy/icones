@@ -13,3 +13,7 @@ collections-info.json
 collections-meta.json
 
 dist-electron
+
+_pgbackup
+_pginfo
+pinegrow.json

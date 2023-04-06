@@ -1,23 +1,18 @@
 {
-  "compilerOptions": {
-    "module": "esnext",
-    "target": "esnext",
-    "lib": ["DOM", "ESNext"],
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "jsx": "preserve",
-    "noUnusedLocals": true,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "forceConsistentCasingInFileNames": true,
-    "types": [
-      "vite/client",
-      "vite-plugin-pages/client"
-    ]
-  },
-  "exclude": [
-    "dist",
-    "node_modules"
-  ]
+	"compilerOptions": {
+		"module": "esnext",
+		"target": "esnext",
+		"lib": ["DOM", "ESNext"],
+		"strict": false,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"jsx": "preserve",
+		"noUnusedLocals": true,
+		"moduleResolution": "node",
+		"resolveJsonModule": true,
+		"forceConsistentCasingInFileNames": true,
+		"types": ["vite/client", "vite-plugin-pages/client"],
+		"allowJs": true
+	},
+	"exclude": ["dist", "node_modules"]
 }

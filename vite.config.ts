@@ -1,45 +1,51 @@
-import { join, resolve } from 'node:path'
+import { resolve } from 'node:path'
 import { rmSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import Pages from 'vite-plugin-pages'
 import Components from 'unplugin-vue-components/vite'
 import AutoImport from 'unplugin-auto-import/vite'
-import { VitePWA } from 'vite-plugin-pwa'
 import dayjs from 'dayjs'
 import Vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
-import fg from 'fast-glob'
-import electron from 'vite-plugin-electron'
-import renderer from 'vite-plugin-electron-renderer'
-import esmodule from 'vite-plugin-esmodule'
+import { liveDesigner } from '@pinegrow/vite-plugin'
+
+import { basePath } from './env'
 
 export default defineConfig(({ mode }) => {
   const isElectron = mode === 'electron'
-  const isBuild = process.argv.slice(2).includes('build')
+  // const isBuild = process.argv.slice(2).includes('build')
 
   if (isElectron)
     rmSync('dist-electron', { recursive: true, force: true })
 
   return {
+    server: {
+      fs: {
+        strict: false,
+      },
+    },
+    base: basePath,
     plugins: [
-      isElectron && electron([
-        {
-          entry: 'src/main/index.ts',
-          vite: {
-            build: {
-              minify: isBuild,
-              outDir: 'dist-electron/main',
-            },
-          },
-        },
-      ]),
-      isElectron && renderer(),
-      isElectron && esmodule(['prettier']),
+      liveDesigner({
+        // ...
+      }),
+      // isElectron
+      // && electron([
+      //    {
+      //      entry: 'src/main/index.ts',
+      //      vite: {
+      //        build: {
+      //          minify: isBuild,
+      //          outDir: 'dist-electron/main',
+      //        },
+      //      },
+      //    },
+      //  ]),
+      // isElectron && renderer(),
+      // isElectron && esmodule(['prettier']),
       Vue({
         reactivityTransform: true,
-        customElement: [
-          'iconify-icon',
-        ],
+        customElement: ['iconify-icon'],
         template: {
           compilerOptions: {
             isCustomElement: tag => tag === 'iconify-icon',
@@ -53,38 +59,33 @@ export default defineConfig(({ mode }) => {
         dts: 'src/components.d.ts',
       }),
       AutoImport({
-        imports: [
-          'vue',
-          'vue/macros',
-          'vue-router',
-          '@vueuse/core',
-        ],
+        imports: ['vue', 'vue/macros', 'vue-router', '@vueuse/core'],
         dts: 'src/auto-imports.d.ts',
       }),
-      !isElectron && VitePWA({
-        manifest: {
-          name: 'Icônes',
-          short_name: 'Icônes',
-          icons: [
-            {
-              src: '/android-chrome-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-            },
-            {
-              src: '/android-chrome-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-            },
-          ],
-        },
-        integration: {
-          configureOptions(viteConfig, options) {
-            if (viteConfig.command === 'build')
-              options.includeAssets = fg.sync('**/*.*', { cwd: join(process.cwd(), 'public'), onlyFiles: true })
-          },
-        },
-      }),
+      // !isElectron && VitePWA({
+      //   manifest: {
+      //     name: 'Icônes',
+      //     short_name: 'Icônes',
+      //     icons: [
+      //       {
+      //         src: '/android-chrome-192x192.png',
+      //         sizes: '192x192',
+      //         type: 'image/png',
+      //       },
+      //       {
+      //         src: '/android-chrome-512x512.png',
+      //         sizes: '512x512',
+      //         type: 'image/png',
+      //       },
+      //     ],
+      //   },
+      //   integration: {
+      //     configureOptions(viteConfig, options) {
+      //       if (viteConfig.command === 'build')
+      //         options.includeAssets = fg.sync('**/*.*', { cwd: join(process.cwd(), 'public'), onlyFiles: true })
+      //     },
+      //   },
+      // }),
       UnoCSS(),
     ],
     define: {
