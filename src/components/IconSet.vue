@@ -1,11 +1,11 @@
 <script setup lang='ts'>
 import { useRoute, useRouter } from 'vue-router'
-import { activeMode, bags, getSearchResults, iconPickerRef, iconSize, isCurrentCollectionLoading, listType, toggleBag } from '../store'
+import { activeMode, bags, getSearchResults, iconPickerRef, iconSize, isCurrentCollectionLoading, listType, showHelp, toggleBag } from '../store'
 import { isLocalMode } from '../env'
 import { cacheCollection, specialTabs } from '../data'
 import { getIconSnippet } from '../utils/icons'
 
-const showBag = $ref(false)
+// const showBag = $ref(false)
 let copied = $ref(false)
 let current = $ref('')
 let max = $ref(isLocalMode ? 500 : 200)
@@ -310,7 +310,7 @@ useEventListener(categoriesContainer, 'wheel', (e: WheelEvent) => {
 
         <!-- Details -->
         <!-- @techakayy -->
-        <!-- <Modal :value="!!current" @close="current = ''">
+        <Modal :value="!!current" @close="current = ''">
           <IconDetail
             :icon="current" :show-collection="specialTabs.includes(collection.id)"
             @close="current = ''"
@@ -318,24 +318,24 @@ useEventListener(categoriesContainer, 'wheel', (e: WheelEvent) => {
             @next="next(1)"
             @prev="next(-1)"
           />
-        </Modal> -->
+        </Modal>
 
         <!-- Help -->
         <!-- @techakayy -->
-        <!-- <ModalDialog :value="showHelp" @close="showHelp = false">
+        <ModalDialog :value="showHelp" @close="showHelp = false">
           <HelpPage />
-        </ModalDialog> -->
+        </ModalDialog>
 
         <!-- Mode -->
         <!-- @techakayy -->
-        <!-- <div
+        <div
           class="fixed top-0 right-0 pl-4 pr-2 py-1 rounded-l-full bg-primary text-white shadow mt-16 cursor-pointer transition-transform duration-300 ease-in-out"
           :style="activeMode !== 'normal' ? {} : { transform: 'translateX(120%)' }"
           @click="activeMode = 'normal'"
         >
           {{ activeMode === 'select' ? 'Multiple select' : 'Name copying mode' }}
           <Icon icon="carbon:close" class="inline-block text-xl align-text-bottom" />
-        </div> -->
+        </div>
 
         <SearchElectron />
 

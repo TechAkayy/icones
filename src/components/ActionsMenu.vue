@@ -191,7 +191,7 @@ const favorited = computed(() => isFavoritedCollection(props.collection.id))
 
     <!-- @techakayy -->
     <!-- Menu -->
-    <!-- <div icon-button cursor-pointer relative i-carbon-menu title="Menu">
+    <div icon-button cursor-pointer relative i-carbon-menu title="Menu">
       <select
         v-model="menu"
         absolute w-full dark:bg-dark-100 text-base top-0 right-0 opacity-0 z-10
@@ -208,21 +208,21 @@ const favorited = computed(() => isFavoritedCollection(props.collection.id))
           </option>
         </optgroup>
         <optgroup label="Modes">
-          <option value="select">
+          <!-- <option value="select">
             Multiple select
-          </option>
+          </option> -->
           <option value="copy">
             Name copying mode
           </option>
-        </optgroup> -->
+        </optgroup>
 
-    <!--
+        <!--
             TODO: due to this function requires to download and pack
                   the full set, we should make some UI to aware users
                   in browser version.
           -->
-    <!-- @techakayy -->
-    <!-- <optgroup v-if="collection.id !== 'all'" label="Downloads">
+        <!-- @techakayy -->
+        <!-- <optgroup v-if="collection.id !== 'all'" label="Downloads">
           <option v-if="!isElectron && !installed" value="cache">
             Cache in Browser
           </option>
@@ -235,9 +235,9 @@ const favorited = computed(() => isFavoritedCollection(props.collection.id))
           <option value="download_json" :disabled="inProgress">
             JSON
           </option>
-        </optgroup>
+        </optgroup> -->
       </select>
-    </div> -->
+    </div>
     <!-- TODO: improve design of custom select -->
     <!-- <CustomSelect v-model="menu" :options="options">
       <div icon-button cursor-pointer relative i-carbon-menu title="Menu" />

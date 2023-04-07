@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { categorySearch, sortedCollectionsInfo, specialTabs } from '../data'
-import { isFavoritedCollection, recentIconIds, toggleFavoriteCollection } from '../store'
+import { isFavoritedCollection, recentIconIds, /* sortAlphabetically, */ toggleFavoriteCollection } from '../store'
 import { isElectron } from '../env'
 
 const route = useRoute()
