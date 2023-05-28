@@ -17,7 +17,7 @@ export const recentCollectionIds = useStorage<string[]>('icones-recent-collectio
 export const recentIconIds = useStorage<string[]>('icones-recent-icons', [])
 export const bags = useStorage<string[]>('icones-bags', [])
 export const activeMode = useStorage<ActiveMode>('active-mode', 'copy')
-export const preferredCase = useStorage<IdCase>('icones-preferfed-case', 'iconify')
+export const preferredCase = useStorage<IdCase>('icones-preferfed-case', 'unocss')
 export const sortAlphabetically = useStorage('icones-alpha-sort-collections', false)
 
 export const excludedCollectionIds = useStorage<string[]>('icones-excluded-collections', [])

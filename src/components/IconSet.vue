@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { useRoute, useRouter } from 'vue-router'
-import { activeMode, bags, getSearchResults, iconPickerRef, iconSize, isCurrentCollectionLoading, listType, showHelp, toggleBag } from '../store'
+import { activeMode, bags, getSearchResults, getTransformedId, iconPickerRef, iconSize, isCurrentCollectionLoading, listType, showHelp, toggleBag } from '../store'
 import { isLocalMode } from '../env'
 import { cacheCollection, specialTabs } from '../data'
 import { getIconSnippet } from '../utils/icons'
@@ -62,7 +62,7 @@ async function onSelect(icon: string) {
       toggleBag(icon)
       break
     case 'copy':
-      iconPickerRef.iconName = icon
+      iconPickerRef.iconName = getTransformedId(icon)
       onCopy(await copyText(await getIconSnippet(icon, 'id', true) || icon))
       break
     default:

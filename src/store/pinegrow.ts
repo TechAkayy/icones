@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { watch } from 'vue'
-import { activeMode } from '../store'
+import { activeMode, preferredCase } from '../store'
 
 export const iconPickerRef = reactive({
+  preferredCase: 'unocss',
   theme: 'dark',
   iconName: '',
   iconSvg: '',
@@ -38,3 +39,15 @@ watch(
     }
   },
 )
+
+// watch(
+//   () => ({
+//     preferredCase: iconPickerRef.preferredCase,
+//   }),
+//   (newVal) => {
+//     preferredCase.value = newVal.preferredCase
+//   })
+
+watch(iconPickerRef, (newVal) => {
+  preferredCase.value = newVal.preferredCase
+})
