@@ -14,12 +14,19 @@ export async function getSvgLocal(icon: string, size = '1em', color = 'currentCo
   if (!built)
     return
   const xlink = built.body.includes('xlink:') ? ' xmlns:xlink="http://www.w3.org/1999/xlink"' : ''
-  return `<svg xmlns="http://www.w3.org/2000/svg"${xlink} ${Object.entries(built.attributes).map(([k, v]) => `${k}="${v}"`).join(' ')}>${built.body}</svg>`.replace('currentColor', color)
+  return `<svg xmlns="http://www.w3.org/2000/svg"${xlink} ${Object.entries(built.attributes)
+		.map(([k, v]) => `${k}="${v}"`)
+		.join(' ')}>${built.body}</svg>`.replaceAll('currentColor', color)
 }
 
 export async function getSvg(icon: string, size = '1em', color = 'currentColor') {
-  return await getSvgLocal(icon, size, color)
-   || await fetch(`${API_ENTRY}/${icon}.svg?inline=false&height=${size}&color=${encodeURIComponent(color)}`).then(r => r.text()) || ''
+  return (
+    (await getSvgLocal(icon, size, color))
+		|| (await fetch(`${API_ENTRY}/${icon}.svg?inline=false&height=${size}&color=${encodeURIComponent(color)}`).then(
+		  r => r.text(),
+		))
+		|| ''
+  )
 }
 
 export async function getSvgSymbol(icon: string, size = '1em', color = 'currentColor') {
@@ -38,7 +45,11 @@ export async function getSvgSymbol(icon: string, size = '1em', color = 'currentC
 }
 
 export function toComponentName(icon: string) {
-  return icon.split(/:|-|_/).filter(Boolean).map(s => s[0].toUpperCase() + s.slice(1).toLowerCase()).join('')
+  return icon
+    .split(/:|-|_/)
+    .filter(Boolean)
+    .map(s => s[0].toUpperCase() + s.slice(1).toLowerCase())
+    .join('')
 }
 
 export function ClearSvg(svgCode: string, reactJSX?: boolean) {
@@ -63,19 +74,31 @@ export function ${name}(props) {
 }`
   if (snippet)
     return prettierCode(code, 'babel-ts')
-  else
-    return prettierCode(`import React from 'react'\n${code}\nexport default ${name}`, 'babel-ts')
+  else return prettierCode(`import React from 'react'\n${code}\nexport default ${name}`, 'babel-ts')
 }
 
-export function SvgToTSX(svg: string, name: string, snippet: boolean) {
+export function SvgToTSX(svg: string, name: string, snippet: boolean, reactJSX = true) {
   let code = `
 export function ${name}(props: SVGProps<SVGSVGElement>) {
   return (
-    ${ClearSvg(svg, true).replace(/<svg (.*?)>/, '<svg $1 {...props}>')}
-  )
+    ${ClearSvg(svg, reactJSX).replace(/<svg (.*?)>/, '<svg $1 {...props}>')}  )
 }`
 
   code = snippet ? code : `import React, { SVGProps } from 'react'\n${code}\nexport default ${name}`
+  return prettierCode(code, 'babel-ts')
+}
+
+export function SvgToQwik(svg: string, name: string, snippet: boolean) {
+  let code = `
+export function ${name}(props: QwikIntrinsicElements['svg'], key: string) {
+  return (
+    ${ClearSvg(svg, false).replace(/<svg (.*?)>/, '<svg $1 {...props} key={key}>')}
+  )
+}`
+
+  code = snippet
+    ? code
+    : `import type { QwikIntrinsicElements } from '@builder.io/qwik'\n${code}\nexport default ${name}`
   return prettierCode(code, 'babel-ts')
 }
 
@@ -94,11 +117,28 @@ export default {
   return prettierCode(code, 'vue')
 }
 
+export function SvgToSolid(svg: string, name: string, snippet: boolean) {
+  let code = `
+export function ${name}(props: JSX.IntrinsicElements['svg'], key: string) {
+  return (
+    ${ClearSvg(svg, false).replace(/<svg (.*?)>/, '<svg $1 {...props} key={key}>')}
+  )
+}`
+
+  code = snippet ? code : `import type { JSX } from 'solid-js'\n${code}\nexport default ${name}`
+  return prettierCode(code, 'babel-ts')
+}
+
 export function SvgToSvelte(svg: string) {
   return ClearSvg(svg)
 }
 
-export async function getIconSnippet(icon: string, type: string, snippet = true, color = 'currentColor'): Promise<string | undefined> {
+export async function getIconSnippet(
+  icon: string,
+  type: string,
+  snippet = true,
+  color = 'currentColor',
+): Promise<string | undefined> {
   if (!icon)
     return
 
@@ -112,7 +152,9 @@ export async function getIconSnippet(icon: string, type: string, snippet = true,
     case 'url':
       return url
     case 'html':
-      return `<span class="iconify" data-icon="${icon}" data-inline="false"${color === 'currentColor' ? '' : ` style="color: ${color}"`}></span>`
+      return `<span class="iconify" data-icon="${icon}" data-inline="false"${
+				color === 'currentColor' ? '' : ` style="color: ${color}"`
+			}></span>`
     case 'css':
       return `background: url('${url}') no-repeat center center / contain;`
     case 'svg':
@@ -127,10 +169,14 @@ export async function getIconSnippet(icon: string, type: string, snippet = true,
       return SvgToJSX(await getSvg(icon, undefined, color), toComponentName(icon), snippet)
     case 'tsx':
       return SvgToTSX(await getSvg(icon, undefined, color), toComponentName(icon), snippet)
+    case 'qwik':
+      return SvgToQwik(await getSvg(icon, undefined, color), toComponentName(icon), snippet)
     case 'vue':
       return SvgToVue(await getSvg(icon, undefined, color), toComponentName(icon))
     case 'vue-ts':
       return SvgToVue(await getSvg(icon, undefined, color), toComponentName(icon), true)
+    case 'solid':
+      return SvgToSolid(await getSvg(icon, undefined, color), toComponentName(icon), snippet)
     case 'svelte':
       return SvgToSvelte(await getSvg(icon, undefined, color))
     case 'unplugin':

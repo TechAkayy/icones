@@ -2,7 +2,15 @@ import type { IconifyJSON } from 'iconify-icon'
 import { notNullish } from '@antfu/utils'
 import { addCollection } from 'iconify-icon'
 import { AsyncFzf } from 'fzf'
-import { favoritedCollectionIds, inProgress, isExcludedCollection, isFavoritedCollection, isRecentCollection, progressMessage, recentCollectionIds, sortAlphabetically } from '../store'
+import {
+  favoritedCollectionIds,
+  inProgress,
+  isExcludedCollection,
+  isFavoritedCollection,
+  isRecentCollection,
+  progressMessage,
+  recentCollectionIds,
+} from '../store'
 import { isLocalMode, staticPath } from '../env'
 import { loadCollection, saveCollection } from '../store/indexedDB'
 import infoJSON from './collections-info.json'
@@ -54,32 +62,31 @@ watch([categorySearch, enabledCollections], ([q]) => {
     filteredCollections.value = enabledCollections.value
   }
   else {
-    fzf.find(q).then((result) => {
-      filteredCollections.value = result
-        .map(i => i.item)
-        .sort((a, b) => {
-          if (sortAlphabetically.value)
-            return a.name.localeCompare(b.name)
-          return 0
-        })
-    }).catch(() => {
-      // The search is canceled
-    })
+    fzf.find(q)
+      .then((result) => {
+        filteredCollections.value = result.map(i => i.item)
+      })
+      .catch(() => {
+        // The search is canceled
+      })
   }
 })
 
 export const sortedCollectionsInfo = computed(() =>
-  filteredCollections.value
-    .sort((a, b) => favoritedCollectionIds.value.indexOf(b.id) - favoritedCollectionIds.value.indexOf(a.id)),
+  filteredCollections.value.sort(
+    (a, b) => favoritedCollectionIds.value.indexOf(b.id) - favoritedCollectionIds.value.indexOf(a.id),
+  ),
 )
 
 export const favoritedCollections = computed(() =>
-  filteredCollections.value.filter(i => isFavoritedCollection(i.id))
+  filteredCollections.value
+    .filter(i => isFavoritedCollection(i.id))
     .sort((a, b) => favoritedCollectionIds.value.indexOf(b.id) - favoritedCollectionIds.value.indexOf(a.id)),
 )
 
 export const recentCollections = computed(() =>
-  filteredCollections.value.filter(i => isRecentCollection(i.id))
+  filteredCollections.value
+    .filter(i => isRecentCollection(i.id))
     .sort((a, b) => recentCollectionIds.value.indexOf(b.id) - recentCollectionIds.value.indexOf(a.id)),
 )
 
@@ -173,7 +180,8 @@ function getVariantCategories(collection: CollectionMeta) {
   const variants: Record<string, string[]> = {}
 
   for (const icon of collection.icons) {
-    const name = variantsRule.find(i => typeof i[1] === 'string' ? icon.endsWith(i[1]) : i[1].test(icon))?.[0] || 'Regular'
+    const name
+			= variantsRule.find(i => (typeof i[1] === 'string' ? icon.endsWith(i[1]) : i[1].test(icon)))?.[0] || 'Regular'
     if (!variants[name])
       variants[name] = []
     variants[name].push(icon)
@@ -186,9 +194,7 @@ export async function getFullMeta() {
   if (loadedMeta.value.length === collections.length)
     return loadedMeta.value
 
-  loadedMeta.value = Object.freeze(
-    await fetch(`${staticPath}/collections-meta.json`).then(r => r.json()),
-  )
+  loadedMeta.value = Object.freeze(await fetch(`${staticPath}/collections-meta.json`).then(r => r.json()))
 
   return loadedMeta.value
 }

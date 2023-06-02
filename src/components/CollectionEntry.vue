@@ -2,23 +2,17 @@
 import type { CollectionInfo, PresentType } from '../data'
 import { isFavoritedCollection, removeRecentCollection, toggleFavoriteCollection } from '../store'
 
-const props = defineProps<{
+defineProps<{
   collection: CollectionInfo
   type?: PresentType
 }>()
-
-function onAction() {
-  if (props.type === 'recent')
-    removeRecentCollection(props.collection.id)
-  else
-    toggleFavoriteCollection(props.collection.id)
-}
 </script>
 
 <template>
   <RouterLink
     :key="collection.id"
-    p3 relative
+    p3
+    relative
     border="~ base"
     class="grid grid-cols-[1fr_90px] gap2 items-center color-base transition-all translate-z-0"
     hover="text-primary !border-primary shadow"
@@ -27,7 +21,15 @@ function onAction() {
     <div ml2>
       <div class="flex-auto text-lg leading-1em my1">
         {{ collection.name }}
-        <span v-if="isFavoritedCollection(collection.id)" m="l--0.5" op80 text-xs inline-block align-top i-carbon-star-filled />
+        <span
+          v-if="isFavoritedCollection(collection.id)"
+          m="l--0.5"
+          op80
+          text-xs
+          inline-block
+          align-top
+          i-carbon-star-filled
+        />
       </div>
       <div flex="~ col auto" opacity-50 text-xs>
         <span>{{ collection.author?.name }}</span>
@@ -44,24 +46,36 @@ function onAction() {
       spacing="m-1"
       class="ma justify-center opacity-75 flex-wrap pointer-events-none"
     />
-    <button
-      class="group"
-      absolute top--1px right--1px p2 border="~ transparent" hover="bg-base border-primary"
-      :title="type === 'recent' ? 'Remove from recent' : type === 'favorite' || isFavoritedCollection(collection.id) ? 'Remove from favorites' : 'Add to favorites'"
-      @click.prevent="onAction"
-    >
-      <div
+    <div absolute top--1px right--1px flex="~ items-center" op0 hover="op100 transition-all">
+      <button
+        class="group"
+        border="~ primary"
+        p2
+        bg-base
+        :title="isFavoritedCollection(collection.id) ? 'Remove from favorites' : 'Add to favorites'"
+        @click.prevent="toggleFavoriteCollection(collection.id)"
+      >
+        <div v-if="isFavoritedCollection(collection.id)" i-carbon-star-filled op50 group-hover="op100" />
+        <div v-else i-carbon-star op50 group-hover="op100" />
+      </button>
+      <button
         v-if="type === 'recent'"
-        i-carbon-delete op0 group-hover="op100"
-      />
-      <div
-        v-else-if="type === 'favorite' || isFavoritedCollection(collection.id)"
-        i-carbon-star-filled op0 group-hover="op100"
-      />
-      <div
-        v-else
-        i-carbon-star op0 group-hover="op100"
-      />
-    </button>
+        class="group"
+        border="~ primary"
+        p2
+        bg-base
+        ml--1px
+        :title="
+          type === 'recent'
+            ? 'Remove from recent'
+            : type === 'favorite' || isFavoritedCollection(collection.id)
+              ? 'Remove from favorites'
+              : 'Add to favorites'
+        "
+        @click.prevent="removeRecentCollection(collection.id)"
+      >
+        <div i-carbon-delete op50 group-hover="op100" />
+      </button>
+    </div>
   </RouterLink>
 </template>

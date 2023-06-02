@@ -7,6 +7,13 @@ import AutoImport from 'unplugin-auto-import/vite'
 import dayjs from 'dayjs'
 import Vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
+
+// import fg from 'fast-glob'
+
+// // eslint-disable-next-line import/default
+// import electron from 'vite-plugin-electron'
+// import renderer from 'vite-plugin-electron-renderer'
+// import esmodule from 'vite-plugin-esmodule'
 import { liveDesigner } from '@pinegrow/vite-plugin'
 
 import { basePath } from './env'
@@ -62,34 +69,49 @@ export default defineConfig(({ mode }) => {
         imports: ['vue', 'vue/macros', 'vue-router', '@vueuse/core'],
         dts: 'src/auto-imports.d.ts',
       }),
-      // !isElectron && VitePWA({
-      //   manifest: {
-      //     name: 'Icônes',
-      //     short_name: 'Icônes',
-      //     icons: [
-      //       {
-      //         src: '/android-chrome-192x192.png',
-      //         sizes: '192x192',
-      //         type: 'image/png',
-      //       },
-      //       {
-      //         src: '/android-chrome-512x512.png',
-      //         sizes: '512x512',
-      //         type: 'image/png',
-      //       },
-      //     ],
-      //   },
-      //   integration: {
-      //     configureOptions(viteConfig, options) {
-      //       if (viteConfig.command === 'build')
-      //         options.includeAssets = fg.sync('**/*.*', { cwd: join(process.cwd(), 'public'), onlyFiles: true })
-      //     },
-      //   },
-      // }),
+      // !isElectron &&
+      // 	VitePWA({
+      // 		strategies: 'injectManifest',
+      // 		srcDir: 'src',
+      // 		filename: 'sw.ts',
+      // 		registerType: 'autoUpdate',
+      // 		manifest: {
+      // 			name: 'Icônes',
+      // 			short_name: 'Icônes',
+      // 			icons: [
+      // 				{
+      // 					src: '/android-chrome-192x192.png',
+      // 					sizes: '192x192',
+      // 					type: 'image/png',
+      // 				},
+      // 				{
+      // 					src: '/android-chrome-512x512.png',
+      // 					sizes: '512x512',
+      // 					type: 'image/png',
+      // 				},
+      // 			],
+      // 		},
+      // 		integration: {
+      // 			configureOptions(viteConfig, options) {
+      // 				if (viteConfig.command === 'build')
+      // 					options.includeAssets = fg.sync('**/*.*', {
+      // 						cwd: join(process.cwd(), 'public'),
+      // 						onlyFiles: true,
+      // 					})
+      // 			},
+      // 		},
+      // 		devOptions: {
+      // 			enabled: process.env.SW_DEV === 'true',
+      // 			/* when using generateSW the PWA plugin will switch to classic */
+      // 			type: 'module',
+      // 			navigateFallback: 'index.html',
+      // 		},
+      // 	}),
       UnoCSS(),
     ],
     define: {
       __BUILD_TIME__: JSON.stringify(dayjs().format('YYYY/MM/DD HH:mm')),
+      PWA: !isElectron && (process.env.NODE_ENV === 'production' || process.env.SW_DEV === 'true'),
     },
     resolve: {
       alias: {

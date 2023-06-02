@@ -1,6 +1,18 @@
-<script setup lang='ts'>
+<!-- eslint-disable no-console -->
+<script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
-import { activeMode, bags, getSearchResults, getTransformedId, iconPickerRef, iconSize, isCurrentCollectionLoading, listType, showHelp, toggleBag } from '../store'
+import {
+  activeMode,
+  bags,
+  getSearchResults,
+  getTransformedId,
+  iconPickerRef,
+  iconSize,
+  isCurrentCollectionLoading,
+  listType,
+  showHelp,
+  toggleBag,
+} from '../store'
 import { isLocalMode } from '../env'
 import { cacheCollection, specialTabs } from '../data'
 import { getIconSnippet } from '../utils/icons'
@@ -9,7 +21,7 @@ import { getIconSnippet } from '../utils/icons'
 let copied = $ref(false)
 let current = $ref('')
 let max = $ref(isLocalMode ? 500 : 200)
-const input = $ref<HTMLInputElement>()
+const searchbar = ref<{ input: HTMLElement }>()
 
 const route = useRoute()
 const router = useRouter()
@@ -20,8 +32,10 @@ const loading = isCurrentCollectionLoading()
 const maxMap = new Map<string, number>()
 const id = $computed(() => collection.value?.id)
 const url = $computed(() => collection.value?.url || collection.value?.author?.url)
-const npm = $computed(() => (id != null && !specialTabs.includes(id)) ? `https://www.npmjs.com/package/@iconify-json/${id}` : '')
-const namespace = $computed(() => (id != null && !specialTabs.includes(id)) ? `${id}:` : '')
+const npm = $computed(() =>
+  id != null && !specialTabs.includes(id) ? `https://www.npmjs.com/package/@iconify-json/${id}` : '',
+)
+const namespace = $computed(() => (id != null && !specialTabs.includes(id) ? `${id}:` : ''))
 
 function onCopy(status: boolean) {
   copied = status
@@ -33,15 +47,13 @@ function onCopy(status: boolean) {
 function toggleCategory(cat: string) {
   if (category.value === cat)
     category.value = ''
-  else
-    category.value = cat
+  else category.value = cat
 }
 
 function toggleVariant(v: string) {
   if (variant.value === v)
     variant.value = ''
-  else
-    variant.value = v
+  else variant.value = v
 }
 
 async function copyText(text?: string) {
@@ -50,8 +62,7 @@ async function copyText(text?: string) {
       await navigator.clipboard.writeText(text)
       return true
     }
-    catch (err) {
-    }
+    catch (err) {}
   }
   return false
 }
@@ -63,7 +74,7 @@ async function onSelect(icon: string) {
       break
     case 'copy':
       iconPickerRef.iconName = getTransformedId(icon)
-      onCopy(await copyText(await getIconSnippet(icon, 'id', true) || icon))
+      onCopy(await copyText((await getIconSnippet(icon, 'id', true)) || icon))
       break
     default:
       current = icon
@@ -97,11 +108,11 @@ function next(delta = 1) {
 
 watch(
   () => namespace,
-  () => max = maxMap.get(namespace) || 200,
+  () => (max = maxMap.get(namespace) || 200),
 )
 
 onMounted(() => {
-  search.value = route.query.s as string || ''
+  search.value = (route.query.s as string) || ''
   watch([search, collection], () => {
     if (search.value)
       router.replace({ query: { s: search.value } })
@@ -109,7 +120,7 @@ onMounted(() => {
 })
 
 function focusSearch() {
-  input?.focus()
+  searchbar.value?.input.focus()
 }
 
 onMounted(focusSearch)
@@ -123,40 +134,47 @@ router.afterEach((to) => {
 
 onKeyStroke('/', (e) => {
   e.preventDefault()
-  input?.focus()
+  focusSearch()
 })
 
 onKeyStroke('Escape', () => {
   if (current !== '') {
     current = ''
-    input?.focus()
+    focusSearch()
   }
 })
 
 const categoriesContainer = ref<HTMLElement | null>(null)
 const { x } = useScroll(categoriesContainer)
-useEventListener(categoriesContainer, 'wheel', (e: WheelEvent) => {
-  e.preventDefault()
-  if (e.deltaX)
-    x.value += e.deltaX
-  else
-    x.value += e.deltaY
-}, {
-  passive: false,
-})
+useEventListener(
+  categoriesContainer,
+  'wheel',
+  (e: WheelEvent) => {
+    e.preventDefault()
+    if (e.deltaX)
+      x.value += e.deltaX
+    else x.value += e.deltaY
+  },
+  {
+    passive: false,
+  },
+)
 </script>
 
 <template>
   <WithNavbar>
-    <div class="flex flex-auto h-full overflow-hidden ">
-      <Drawer class="h-full overflow-y-overlay flex-none hidden md:block" style="width:220px" />
+    <div class="flex flex-auto h-full overflow-hidden">
+      <Drawer class="h-full overflow-y-overlay flex-none hidden md:block" style="width: 220px" />
       <div v-if="collection" class="py-5 h-full overflow-y-overlay flex-auto overflow-x-hidden relative">
         <!-- Loading -->
         <div
           class="absolute top-0 left-0 right-0 bottom-0 bg-white bg-opacity-75 content-center transition-opacity duration-100 z-50 dark:bg-dark-100"
           :class="loading ? '' : 'opacity-0 pointer-events-none'"
         >
-          <div class="absolute text-gray-800 dark:text-dark-500" style="top:50%;left:50%;transform:translate(-50%,-50%)">
+          <div
+            class="absolute text-gray-800 dark:text-dark-500"
+            style="top: 50%; left: 50%; transform: translate(-50%, -50%)"
+          >
             Loading...
           </div>
         </div>
@@ -208,14 +226,15 @@ useEventListener(categoriesContainer, 'wheel', (e: WheelEvent) => {
         </div>
 
         <!-- Categories -->
-        <div v-if="collection.categories" ref="categoriesContainer" class="py-1 mt2 mx-8 overflow-x-overlay flex flex-nowrap gap-2 select-none">
+        <div
+          v-if="collection.categories"
+          ref="categoriesContainer"
+          class="py-1 mt2 mx-8 flex flex-wrap gap-2 select-none"
+        >
           <div
             v-for="c of Object.keys(collection.categories).sort()"
             :key="c"
-            class="
-                whitespace-nowrap text-sm inline-block px-2 border border-base rounded-full hover:bg-gray-50 cursor-pointer
-                dark:border-dark-200 dark:hover:bg-dark-200
-              "
+            class="whitespace-nowrap text-sm inline-block px-2 border border-base rounded-full hover:bg-gray-50 cursor-pointer dark:border-dark-200 dark:hover:bg-dark-200"
             :class="c === category ? 'text-primary border-primary dark:border-primary' : 'opacity-75'"
             @click="toggleCategory(c)"
           >
@@ -224,41 +243,17 @@ useEventListener(categoriesContainer, 'wheel', (e: WheelEvent) => {
         </div>
 
         <!-- Searching -->
-        <div
-          class="
-            mx-8 my-2 hidden md:flex shadow rounded outline-none py-1 px-4
-            border border-base
-          "
-        >
-          <Icon icon="carbon:search" class="m-auto flex-none opacity-60" />
-          <form action="/collection/all" class="flex-auto" role="search" method="get" @submit.prevent>
-            <input
-              ref="input"
-              v-model="search"
-              aria-label="Search"
-              class="text-base outline-none w-full py-1 px-4 m-0 bg-transparent"
-              name="s"
-              placeholder="Search..."
-              autofocus
-              autocomplete="off"
-            >
-          </form>
-
-          <Icon v-if="search" icon="carbon:close" class="m-auto text-lg -mr-1 opacity-60" @click="search = ''" />
-        </div>
+        <SearchBar ref="searchbar" v-model:search="search" class="mx-8 my-2 hidden md:flex" />
 
         <!-- Variants --->
-        <div v-if="collection.variants" class="py1 mx-8 overflow-x-overlay flex flex-nowrap gap-2 select-none items-center">
+        <div v-if="collection.variants" class="py1 mx-8 flex flex-wrap gap-2 select-none items-center">
           <div text-sm op50>
             Variants
           </div>
           <div
             v-for="c of Object.keys(collection.variants).sort()"
             :key="c"
-            class="
-                whitespace-nowrap text-sm inline-block px-2 border border-base rounded-full hover:bg-gray-50 cursor-pointer
-                dark:border-dark-200 dark:hover:bg-dark-200
-              "
+            class="whitespace-nowrap text-sm inline-block px-2 border border-base rounded-full hover:bg-gray-50 cursor-pointer dark:border-dark-200 dark:hover:bg-dark-200"
             :class="c === variant ? 'text-primary border-primary dark:border-primary' : 'opacity-75'"
             @click="toggleVariant(c)"
           >
@@ -312,7 +307,8 @@ useEventListener(categoriesContainer, 'wheel', (e: WheelEvent) => {
         <!-- @techakayy -->
         <Modal :value="!!current" @close="current = ''">
           <IconDetail
-            :icon="current" :show-collection="specialTabs.includes(collection.id)"
+            :icon="current"
+            :show-collection="specialTabs.includes(collection.id)"
             @close="current = ''"
             @copy="onCopy"
             @next="next(1)"

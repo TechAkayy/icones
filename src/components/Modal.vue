@@ -1,13 +1,21 @@
-<script setup lang='ts'>
-const props = withDefaults(defineProps<{
-  value?: boolean
-  direction?: string
-}>(), {
-  value: false,
-  direction: 'bottom',
-})
+<script setup lang="ts">
+const props = withDefaults(
+  defineProps<{
+    value?: boolean
+    direction?: string
+  }>(),
+  {
+    value: false,
+    direction: 'bottom',
+  },
+)
+
+const { width, height } = useWindowSize()
+const isSmall = computed(() => width.value < 600 || height.value < 450)
 
 const positionClass = computed(() => {
+  if (isSmall.value)
+    return 'bottom-0 left-0 right-0 top-0 of-auto'
   switch (props.direction) {
     case 'bottom':
       return 'bottom-0 left-0 right-0 border-t'
@@ -39,17 +47,28 @@ const transform = computed(() => {
 </script>
 
 <template>
-  <div
-    fixed top-0 bottom-0 left-0 right-0 z-40
-    :class="value ? '' : 'pointer-events-none'"
-  >
+  <div fixed top-0 bottom-0 left-0 right-0 z-40 :class="value ? '' : 'pointer-events-none'">
     <div
-      bg-base bottom-0 left-0 right-0 top-0 absolute transition-opacity duration-500 ease-out
+      bg-base
+      bottom-0
+      left-0
+      right-0
+      top-0
+      absolute
+      transition-opacity
+      duration-500
+      ease-out
       :class="value ? 'opacity-85' : 'opacity-0'"
       @click="$emit('close')"
     />
     <div
-      bg-base border border-base absolute transition-all duration-200 ease-out
+      bg-base
+      border
+      border-base
+      absolute
+      transition-all
+      duration-200
+      ease-out
       :class="positionClass"
       :style="value ? {} : { transform }"
     >

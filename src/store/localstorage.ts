@@ -18,12 +18,9 @@ export const recentIconIds = useStorage<string[]>('icones-recent-icons', [])
 export const bags = useStorage<string[]>('icones-bags', [])
 export const activeMode = useStorage<ActiveMode>('active-mode', 'copy')
 export const preferredCase = useStorage<IdCase>('icones-preferfed-case', 'unocss')
-export const sortAlphabetically = useStorage('icones-alpha-sort-collections', false)
 
 export const excludedCollectionIds = useStorage<string[]>('icones-excluded-collections', [])
-export const excludedCategories = useStorage<string[]>('icones-excluded-categories', [
-  'Archive / Unmaintained',
-])
+export const excludedCategories = useStorage<string[]>('icones-excluded-categories', ['Archive / Unmaintained'])
 
 export function getTransformedId(icon: string) {
   return idCases[preferredCase.value]?.(icon) || icon
@@ -34,7 +31,10 @@ export function isFavoritedCollection(id: string) {
 }
 
 export function isExcludedCollection(collection: CollectionInfo) {
-  return excludedCollectionIds.value.includes(collection.id) || excludedCategories.value.includes(collection.category || '')
+  return (
+    excludedCollectionIds.value.includes(collection.id)
+		|| excludedCategories.value.includes(collection.category || '')
+  )
 }
 
 export function isExcludedCategory(category: string | undefined) {
@@ -46,7 +46,10 @@ export function isRecentCollection(id: string) {
 }
 
 export function pushRecentCollection(id: string) {
-  recentCollectionIds.value = [id, ...recentCollectionIds.value.filter(i => i !== id)].slice(0, RECENT_COLLECTION_CAPACITY)
+  recentCollectionIds.value = [id, ...recentCollectionIds.value.filter(i => i !== id)].slice(
+    0,
+    RECENT_COLLECTION_CAPACITY,
+  )
 }
 
 export function removeRecentCollection(id: string) {
@@ -69,24 +72,21 @@ export function toggleFavoriteCollection(id: string) {
   const index = favoritedCollectionIds.value.indexOf(id)
   if (index >= 0)
     favoritedCollectionIds.value.splice(index, 1)
-  else
-    favoritedCollectionIds.value.push(id)
+  else favoritedCollectionIds.value.push(id)
 }
 
 export function toggleExcludedCollection(id: string) {
   const index = excludedCollectionIds.value.indexOf(id)
   if (index >= 0)
     excludedCollectionIds.value.splice(index, 1)
-  else
-    excludedCollectionIds.value.push(id)
+  else excludedCollectionIds.value.push(id)
 }
 
 export function toggleExcludedCategory(category: string) {
   const index = excludedCategories.value.indexOf(category)
   if (index >= 0)
     excludedCategories.value.splice(index, 1)
-  else
-    excludedCategories.value.push(category)
+  else excludedCategories.value.push(category)
 }
 
 export function addToBag(id: string) {
@@ -108,8 +108,7 @@ export function toggleBag(id: string) {
   const index = bags.value.indexOf(id)
   if (index >= 0)
     bags.value.splice(index, 1)
-  else
-    bags.value.push(id)
+  else bags.value.push(id)
 }
 
 export function clearBag() {

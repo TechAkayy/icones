@@ -1,7 +1,7 @@
 <script lang="ts">
-import LRU from 'lru-cache'
+import { LRUCache } from 'lru-cache'
 
-const cache = new LRU<string, HTMLElement>({
+const cache = new LRUCache<string, HTMLElement>({
   max: 1_000,
 })
 
@@ -68,15 +68,15 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
-iconify-icon {
-  min-width: 1em;
-  min-height: 1em;
-  display: block;
-}
+	iconify-icon {
+		min-width: 1em;
+		min-height: 1em;
+		display: block;
+	}
 
-.icon-container {
-  display: inline-block;
-  vertical-align: middle;
-  line-height: 1em !important;
-}
+	.icon-container {
+		display: inline-block;
+		vertical-align: middle;
+		line-height: 1em !important;
+	}
 </style>
